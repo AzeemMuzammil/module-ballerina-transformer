@@ -14,7 +14,6 @@
  * limitations under the License.
  *
  */
-import org.apache.tools.ant.taskdefs.condition.Os
 description = 'Ballerina - Transformer Compiler Plugin'
 
 buildscript {
@@ -92,6 +91,7 @@ task commitTomlFiles {
 updateTomlFiles.dependsOn copyStdlibs
 
 build.dependsOn ":${packageName}-compiler-plugin:build"
+build.finalizedBy ":${packageName}-integration-tests:build"
 
 publishToMavenLocal.dependsOn build
 publish.dependsOn build

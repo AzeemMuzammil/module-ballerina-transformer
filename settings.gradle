@@ -25,10 +25,9 @@ rootProject.name = 'transformer'
 include ':checkstyle'
 include ':transformer-ballerina'
 include ':transformer-compiler-plugin'
+include ':transformer-integration-tests'
 
 project(':checkstyle').projectDir = file("build-config${File.separator}checkstyle")
-project(':transformer-ballerina').projectDir = file('ballerina-module')
-project(':transformer-compiler-plugin').projectDir = file('compiler-plugin')
 
 gradleEnterprise {
     buildScan {
