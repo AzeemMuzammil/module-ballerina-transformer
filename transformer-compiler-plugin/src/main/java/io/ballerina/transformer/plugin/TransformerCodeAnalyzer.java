@@ -63,6 +63,11 @@ public class TransformerCodeAnalyzer extends CodeAnalyzer {
                         && functionDefNode.functionBody().kind() != SyntaxKind.EXPRESSION_FUNCTION_BODY) {
                     reportDiagnostics(syntaxNodeAnalysisContext, DiagnosticMessage.ERROR_101);
                 }
+                functionDefNode.metadata().ifPresent(metadata -> {
+                    if (!metadata.annotations().isEmpty()) {
+                        reportDiagnostics(syntaxNodeAnalysisContext, DiagnosticMessage.ERROR_106);
+                    }
+                });
                 break;
             case LISTENER_DECLARATION:
                 reportDiagnostics(syntaxNodeAnalysisContext, DiagnosticMessage.ERROR_102);

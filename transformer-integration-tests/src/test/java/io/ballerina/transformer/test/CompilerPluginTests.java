@@ -29,7 +29,6 @@ import io.ballerina.transformer.plugin.diagnostic.DiagnosticMessage;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-//import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -43,8 +42,6 @@ public class CompilerPluginTests {
     private static final Path DISTRIBUTION_PATH = Paths.get("../", "target", "ballerina-runtime")
             .toAbsolutePath();
 
-//    private static final PrintStream OUT = System.out;
-
     private Package loadPackage(String path) {
         Path projectDirPath = RESOURCE_DIRECTORY.resolve(path);
         BuildProject project = BuildProject.load(getEnvironmentBuilder(), projectDirPath);
@@ -56,12 +53,23 @@ public class CompilerPluginTests {
         return ProjectEnvironmentBuilder.getBuilder(environment);
     }
 
-    private void assertError(DiagnosticResult diagnosticResult, int index, String message, String code) {
+    private void assertError(DiagnosticResult diagnosticResult, int index, DiagnosticMessage diagnosticMessage) {
         Diagnostic diagnostic = (Diagnostic) diagnosticResult.errors().toArray()[index];
-        Assert.assertEquals(diagnostic.diagnosticInfo().messageFormat(), message);
-        if (code != null) {
-            Assert.assertEquals(diagnostic.diagnosticInfo().code(), code);
-        }
+        Assert.assertEquals(diagnostic.diagnosticInfo().messageFormat(), diagnosticMessage.getMessageFormat());
+        Assert.assertEquals(diagnostic.diagnosticInfo().code(), diagnosticMessage.getCode());
+    }
+
+    @Test
+    public void testForAnnotatedFunctions() {
+        Package currentPackage = loadPackage("sample_package_0");
+        PackageCompilation compilation = currentPackage.getCompilation();
+        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
+        Assert.assertEquals(diagnosticResult.errorCount(), 5);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_101);
+        assertError(diagnosticResult, 4, DiagnosticMessage.ERROR_106);
     }
 
     @Test
@@ -70,8 +78,7 @@ public class CompilerPluginTests {
         PackageCompilation compilation = currentPackage.getCompilation();
         DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         Assert.assertEquals(diagnosticResult.errorCount(), 1);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105.getMessageFormat(),
-                DiagnosticMessage.ERROR_105.getCode());
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
     }
 
     @Test
@@ -80,12 +87,9 @@ public class CompilerPluginTests {
         PackageCompilation compilation = currentPackage.getCompilation();
         DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         Assert.assertEquals(diagnosticResult.errorCount(), 3);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105.getMessageFormat(),
-                DiagnosticMessage.ERROR_105.getCode());
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_100.getMessageFormat(),
-                DiagnosticMessage.ERROR_100.getCode());
-        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_101.getMessageFormat(),
-                DiagnosticMessage.ERROR_101.getCode());
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_100);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_101);
     }
 
     @Test
@@ -94,38 +98,41 @@ public class CompilerPluginTests {
         PackageCompilation compilation = currentPackage.getCompilation();
         DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         Assert.assertEquals(diagnosticResult.errorCount(), 2);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105.getMessageFormat(),
-                DiagnosticMessage.ERROR_105.getCode());
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_103.getMessageFormat(),
-                DiagnosticMessage.ERROR_103.getCode());
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_103);
     }
 
-//    @Test
-//    public void testForServices() {
-//        Package currentPackage = loadPackage("sample_package_4");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-//        Assert.assertEquals(diagnosticResult.errorCount(), 6);
-//        diagnosticResult.diagnostics().forEach(OUT::println);
-////        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105.getMessageFormat(),
-// DiagnosticMessage.ERROR_105.getCode());
-////        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_100.getMessageFormat(),
-// DiagnosticMessage.ERROR_100.getCode());
-////        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_101.getMessageFormat(),
-// DiagnosticMessage.ERROR_101.getCode());
-//    }
-//
-//    @Test
-//    public void testForListeners() {
-//        Package currentPackage = loadPackage("sample_package_2");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-//        Assert.assertEquals(diagnosticResult.errorCount(), 3);
-//        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105.getMessageFormat(),
-//        DiagnosticMessage.ERROR_105.getCode());
-//        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_100.getMessageFormat(),
-//        DiagnosticMessage.ERROR_100.getCode());
-//        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_101.getMessageFormat(),
-//        DiagnosticMessage.ERROR_101.getCode());
-//    }
+    @Test
+    public void testForServices() {
+        Package currentPackage = loadPackage("sample_package_4");
+        PackageCompilation compilation = currentPackage.getCompilation();
+        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
+        Assert.assertEquals(diagnosticResult.errorCount(), 2);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_104);
+    }
+
+    @Test
+    public void testForListeners() {
+        Package currentPackage = loadPackage("sample_package_5");
+        PackageCompilation compilation = currentPackage.getCompilation();
+        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
+        Assert.assertEquals(diagnosticResult.errorCount(), 4);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_103);
+    }
+
+    @Test
+    public void testForPublicFunctions() {
+        Package currentPackage = loadPackage("sample_package_6");
+        PackageCompilation compilation = currentPackage.getCompilation();
+        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
+        Assert.assertEquals(diagnosticResult.errorCount(), 4);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_101);
+    }
 }
