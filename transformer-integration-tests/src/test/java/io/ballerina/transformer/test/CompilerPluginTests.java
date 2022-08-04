@@ -135,4 +135,12 @@ public class CompilerPluginTests {
         assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_104);
         assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_101);
     }
+
+    @Test
+    public void testForValidPackage() {
+        Package currentPackage = loadPackage("sample_package_7");
+        PackageCompilation compilation = currentPackage.getCompilation();
+        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
+        Assert.assertEquals(diagnosticResult.errorCount(), 0);
+    }
 }

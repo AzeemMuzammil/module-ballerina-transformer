@@ -19,9 +19,12 @@
 package io.ballerina.transformer.plugin;
 
 import io.ballerina.compiler.syntax.tree.FunctionDefinitionNode;
+import io.ballerina.compiler.syntax.tree.ImportDeclarationNode;
 import io.ballerina.compiler.syntax.tree.ModulePartNode;
 import io.ballerina.compiler.syntax.tree.Node;
 import io.ballerina.compiler.syntax.tree.SyntaxKind;
+import io.ballerina.projects.Module;
+import io.ballerina.projects.ModuleId;
 import io.ballerina.projects.plugins.AnalysisTask;
 import io.ballerina.projects.plugins.CodeAnalysisContext;
 import io.ballerina.projects.plugins.CodeAnalyzer;
@@ -32,6 +35,8 @@ import io.ballerina.tools.diagnostics.DiagnosticInfo;
 import io.ballerina.transformer.plugin.diagnostic.DiagnosticMessage;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Transformer module Code Analyzer.
@@ -39,16 +44,19 @@ import java.util.List;
  */
 public class TransformerCodeAnalyzer extends CodeAnalyzer {
 
+    private AtomicInteger visitedDefaultModuleParts = new AtomicInteger(0);
+    private AtomicBoolean foundExprBodiedFunc = new AtomicBoolean(false);
+
     @Override
     public void init(CodeAnalysisContext codeAnalysisContext) {
-        codeAnalysisContext.addSyntaxNodeAnalysisTask(modulePartAnalysisTask, List.of(SyntaxKind.CLASS_DEFINITION,
+        codeAnalysisContext.addSyntaxNodeAnalysisTask(syntaxNodeAnalysisTask, List.of(SyntaxKind.CLASS_DEFINITION,
                 SyntaxKind.FUNCTION_DEFINITION,
                 SyntaxKind.LISTENER_DECLARATION,
                 SyntaxKind.MODULE_PART,
                 SyntaxKind.SERVICE_DECLARATION));
     }
 
-    private final AnalysisTask<SyntaxNodeAnalysisContext> modulePartAnalysisTask = syntaxNodeAnalysisContext -> {
+    private final AnalysisTask<SyntaxNodeAnalysisContext> syntaxNodeAnalysisTask = syntaxNodeAnalysisContext -> {
         Node node = syntaxNodeAnalysisContext.node();
         SyntaxKind nodeKind = node.kind();
 
@@ -62,6 +70,10 @@ public class TransformerCodeAnalyzer extends CodeAnalyzer {
                         qualifier.kind() == SyntaxKind.PUBLIC_KEYWORD)
                         && functionDefNode.functionBody().kind() != SyntaxKind.EXPRESSION_FUNCTION_BODY) {
                     reportDiagnostics(syntaxNodeAnalysisContext, DiagnosticMessage.ERROR_101);
+                }
+                if (functionDefNode.parent() instanceof ModulePartNode
+                        && isTestModulePart((ModulePartNode) functionDefNode.parent())) {
+                    break;
                 }
                 functionDefNode.metadata().ifPresent(metadata -> {
                     if (!metadata.annotations().isEmpty()) {
@@ -79,29 +91,25 @@ public class TransformerCodeAnalyzer extends CodeAnalyzer {
                 reportDiagnostics(syntaxNodeAnalysisContext, DiagnosticMessage.ERROR_104);
                 break;
             case MODULE_PART:
+                ModuleId moduleId = syntaxNodeAnalysisContext.moduleId();
+                if (!isDefaultModule(syntaxNodeAnalysisContext.currentPackage().modules(), moduleId)) {
+                    break;
+                }
+                // Inside default module's module part node
+                if (foundExprBodiedFunc.get()) {
+                    break;
+                }
+
                 ModulePartNode modulePartNode =
                         (ModulePartNode) syntaxNodeAnalysisContext.node();
-                boolean isPublic = modulePartNode.members().stream().anyMatch(member -> {
-                    if (member.kind() == SyntaxKind.FUNCTION_DEFINITION) {
-                        FunctionDefinitionNode funcDefNode = (FunctionDefinitionNode) member;
-                        return !funcDefNode.qualifierList().isEmpty() &&
-                                funcDefNode.qualifierList().stream().anyMatch(qualifier ->
-                                        qualifier.kind() == SyntaxKind.PUBLIC_KEYWORD)
-                                && funcDefNode.functionBody().kind() == SyntaxKind.EXPRESSION_FUNCTION_BODY;
-                    }
-                    return false;
-                });
-                boolean isIsolated = modulePartNode.members().stream().anyMatch(member -> {
-                    if (member.kind() == SyntaxKind.FUNCTION_DEFINITION) {
-                        FunctionDefinitionNode funcDefNode = (FunctionDefinitionNode) member;
-                        return !funcDefNode.qualifierList().isEmpty() &&
-                                funcDefNode.qualifierList().stream().anyMatch(qualifier ->
-                                        qualifier.kind() == SyntaxKind.ISOLATED_KEYWORD)
-                                && funcDefNode.functionBody().kind() == SyntaxKind.EXPRESSION_FUNCTION_BODY;
-                    }
-                    return false;
-                });
-                if (!isPublic || !isIsolated) {
+                boolean isPublic = isAnyExprBodyFuncWithQualifier(modulePartNode, SyntaxKind.PUBLIC_KEYWORD);
+                boolean isIsolated = isAnyExprBodyFuncWithQualifier(modulePartNode, SyntaxKind.ISOLATED_KEYWORD);
+                if (isPublic && isIsolated) {
+                    foundExprBodiedFunc.set(true);
+                }
+                if (syntaxNodeAnalysisContext.currentPackage()
+                        .module(moduleId).documentIds().size() == visitedDefaultModuleParts.incrementAndGet()
+                        && !foundExprBodiedFunc.get()) {
                     reportDiagnostics(syntaxNodeAnalysisContext, DiagnosticMessage.ERROR_105);
                 }
                 break;
@@ -121,5 +129,36 @@ public class TransformerCodeAnalyzer extends CodeAnalyzer {
         Diagnostic diagnostic =
                 DiagnosticFactory.createDiagnostic(diagnosticInfo, syntaxNodeAnalysisContext.node().location(), args);
         syntaxNodeAnalysisContext.reportDiagnostic(diagnostic);
+    }
+
+    private boolean isDefaultModule(Iterable<Module> modules, ModuleId moduleId) {
+        for (Module module : modules) {
+            if (module.isDefaultModule() && module.moduleId() == moduleId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isTestModulePart(ModulePartNode node) {
+        for (ImportDeclarationNode importDecNode : node.imports()) {
+            if (importDecNode.moduleName().stream().anyMatch(name -> name.text().equals("test"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAnyExprBodyFuncWithQualifier(ModulePartNode modulePartNode, SyntaxKind qualifierKeyword) {
+        return modulePartNode.members().stream().anyMatch(member -> {
+            if (member.kind() == SyntaxKind.FUNCTION_DEFINITION) {
+                FunctionDefinitionNode funcDefNode = (FunctionDefinitionNode) member;
+                return !funcDefNode.qualifierList().isEmpty() &&
+                        funcDefNode.qualifierList().stream().anyMatch(qualifier ->
+                                qualifier.kind() == qualifierKeyword)
+                        && funcDefNode.functionBody().kind() == SyntaxKind.EXPRESSION_FUNCTION_BODY;
+            }
+            return false;
+        });
     }
 }
