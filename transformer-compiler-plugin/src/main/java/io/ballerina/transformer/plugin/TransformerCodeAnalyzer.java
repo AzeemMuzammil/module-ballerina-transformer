@@ -44,8 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TransformerCodeAnalyzer extends CodeAnalyzer {
 
-    private AtomicInteger visitedDefaultModuleParts = new AtomicInteger(0);
-    private AtomicBoolean foundExprBodiedFunc = new AtomicBoolean(false);
+    private static AtomicInteger visitedDefaultModuleParts = new AtomicInteger(0);
+    private static AtomicBoolean foundExprBodiedFunc = new AtomicBoolean(false);
 
     @Override
     public void init(CodeAnalysisContext codeAnalysisContext) {

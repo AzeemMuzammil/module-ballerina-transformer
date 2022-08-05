@@ -29,7 +29,7 @@ public class TransformerCompilerPlugin extends CompilerPlugin {
 
     @Override
     public void init(CompilerPluginContext compilerPluginContext) {
-        compilerPluginContext.addCodeAnalyzer(new TransformerCodeAnalyzer());
+//        compilerPluginContext.addCodeAnalyzer(new TransformerCodeAnalyzer());
         compilerPluginContext.addCodeGenerator(new TransformerCodeGenerator());
     }
 }
