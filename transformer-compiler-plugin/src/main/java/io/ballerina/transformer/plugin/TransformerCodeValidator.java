@@ -26,37 +26,20 @@ import io.ballerina.compiler.syntax.tree.SyntaxKind;
 import io.ballerina.projects.Module;
 import io.ballerina.projects.ModuleId;
 import io.ballerina.projects.plugins.AnalysisTask;
-import io.ballerina.projects.plugins.CodeAnalysisContext;
-import io.ballerina.projects.plugins.CodeAnalyzer;
 import io.ballerina.projects.plugins.SyntaxNodeAnalysisContext;
 import io.ballerina.tools.diagnostics.Diagnostic;
 import io.ballerina.tools.diagnostics.DiagnosticFactory;
 import io.ballerina.tools.diagnostics.DiagnosticInfo;
 import io.ballerina.transformer.plugin.diagnostic.DiagnosticMessage;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
- * Transformer module Code Analyzer.
+ * Transformer module Code Validator.
  *
  */
-public class TransformerCodeAnalyzer extends CodeAnalyzer {
-
-    private static AtomicInteger visitedDefaultModuleParts = new AtomicInteger(0);
-    private static AtomicBoolean foundExprBodiedFunc = new AtomicBoolean(false);
+public class TransformerCodeValidator implements AnalysisTask<SyntaxNodeAnalysisContext> {
 
     @Override
-    public void init(CodeAnalysisContext codeAnalysisContext) {
-        codeAnalysisContext.addSyntaxNodeAnalysisTask(syntaxNodeAnalysisTask, List.of(SyntaxKind.CLASS_DEFINITION,
-                SyntaxKind.FUNCTION_DEFINITION,
-                SyntaxKind.LISTENER_DECLARATION,
-                SyntaxKind.MODULE_PART,
-                SyntaxKind.SERVICE_DECLARATION));
-    }
-
-    private final AnalysisTask<SyntaxNodeAnalysisContext> syntaxNodeAnalysisTask = syntaxNodeAnalysisContext -> {
+    public void perform(SyntaxNodeAnalysisContext syntaxNodeAnalysisContext) {
         Node node = syntaxNodeAnalysisContext.node();
         SyntaxKind nodeKind = node.kind();
 
@@ -95,32 +78,30 @@ public class TransformerCodeAnalyzer extends CodeAnalyzer {
                 if (!isDefaultModule(syntaxNodeAnalysisContext.currentPackage().modules(), moduleId)) {
                     break;
                 }
-                // Inside default module's module part node
-                if (foundExprBodiedFunc.get()) {
-                    break;
-                }
 
+                // Inside default module's module part node
                 ModulePartNode modulePartNode =
                         (ModulePartNode) syntaxNodeAnalysisContext.node();
-                boolean isPublic = isAnyExprBodyFuncWithQualifier(modulePartNode, SyntaxKind.PUBLIC_KEYWORD);
-                boolean isIsolated = isAnyExprBodyFuncWithQualifier(modulePartNode, SyntaxKind.ISOLATED_KEYWORD);
-                if (isPublic && isIsolated) {
-                    foundExprBodiedFunc.set(true);
-                }
-                if (syntaxNodeAnalysisContext.currentPackage()
-                        .module(moduleId).documentIds().size() == visitedDefaultModuleParts.incrementAndGet()
-                        && !foundExprBodiedFunc.get()) {
+                modulePartNode.members().forEach(member -> {
+                    if (member.kind() == SyntaxKind.FUNCTION_DEFINITION) {
+                        FunctionDefinitionNode funcDefNode = (FunctionDefinitionNode) member;
+                        if (isExprBodyFuncWithPublicIsolatedQualifier(funcDefNode)) {
+                            TransformerCodeAnalyzerGenerator.FOUND_EXPR_BODIED_FUNC.set(true);
+                            TransformerCodeAnalyzerGenerator.TRANSFORMER_FUNC_NAMES
+                                    .add(funcDefNode.functionName().text());
+                        }
+                    }
+                });
+                if (syntaxNodeAnalysisContext.currentPackage().module(moduleId).documentIds().size()
+                        == TransformerCodeAnalyzerGenerator.VISITED_DEFAULT_MODULE_PARTS.incrementAndGet()
+                        && !TransformerCodeAnalyzerGenerator.FOUND_EXPR_BODIED_FUNC.get()) {
                     reportDiagnostics(syntaxNodeAnalysisContext, DiagnosticMessage.ERROR_105);
                 }
                 break;
             default:
                 break;
         }
-    };
-
-//    private boolean isAnyQualifierTokenMatch(NodeList<Token> qualifierList, SyntaxKind kind) {
-//        return qualifierList.stream().anyMatch(qualifier -> qualifier.kind() == kind);
-//    }
+    }
 
     private void reportDiagnostics(SyntaxNodeAnalysisContext syntaxNodeAnalysisContext,
                                    DiagnosticMessage diagnosticMessage, Object... args) {
@@ -149,16 +130,12 @@ public class TransformerCodeAnalyzer extends CodeAnalyzer {
         return false;
     }
 
-    private boolean isAnyExprBodyFuncWithQualifier(ModulePartNode modulePartNode, SyntaxKind qualifierKeyword) {
-        return modulePartNode.members().stream().anyMatch(member -> {
-            if (member.kind() == SyntaxKind.FUNCTION_DEFINITION) {
-                FunctionDefinitionNode funcDefNode = (FunctionDefinitionNode) member;
-                return !funcDefNode.qualifierList().isEmpty() &&
-                        funcDefNode.qualifierList().stream().anyMatch(qualifier ->
-                                qualifier.kind() == qualifierKeyword)
-                        && funcDefNode.functionBody().kind() == SyntaxKind.EXPRESSION_FUNCTION_BODY;
-            }
-            return false;
-        });
+    private boolean isExprBodyFuncWithPublicIsolatedQualifier(FunctionDefinitionNode funcDefNode) {
+        return !funcDefNode.qualifierList().isEmpty() &&
+                funcDefNode.qualifierList().stream().anyMatch(qualifier ->
+                        qualifier.kind() == SyntaxKind.PUBLIC_KEYWORD)
+                && funcDefNode.qualifierList().stream().anyMatch(qualifier ->
+                qualifier.kind() == SyntaxKind.PUBLIC_KEYWORD)
+                && funcDefNode.functionBody().kind() == SyntaxKind.EXPRESSION_FUNCTION_BODY;
     }
 }

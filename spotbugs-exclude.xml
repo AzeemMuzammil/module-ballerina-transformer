@@ -20,7 +20,7 @@
         <Package name="io.ballerina.transformer.plugin"/>
     </Match>
     <Match>
-        <Class name="io.ballerina.transformer.plugin.TransformerCodeAnalyzer"/>
-        <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
+        <Class name="io.ballerina.transformer.plugin.TransformerServiceGenerator"/>
+        <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
     </Match>
 </FindBugsFilter>

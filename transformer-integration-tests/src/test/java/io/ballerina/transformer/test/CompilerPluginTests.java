@@ -17,6 +17,7 @@
  */
 package io.ballerina.transformer.test;
 
+import io.ballerina.projects.CodeGeneratorResult;
 import io.ballerina.projects.DiagnosticResult;
 import io.ballerina.projects.Package;
 import io.ballerina.projects.ProjectEnvironmentBuilder;
@@ -63,7 +64,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_0");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 5);
         assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
         assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
@@ -77,7 +79,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_1");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 1);
         assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
     }
@@ -87,7 +90,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_2");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 3);
         assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
         assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_100);
@@ -99,7 +103,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_3");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 2);
         assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
         assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_103);
@@ -110,7 +115,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_4");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 2);
         assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
         assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_104);
@@ -121,7 +127,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_5");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 4);
         assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
         assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
@@ -134,7 +141,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_6");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 4);
         assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
         assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
@@ -147,7 +155,8 @@ public class CompilerPluginTests {
         Package currentPackage = loadPackage("sample_package_7");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
-        DiagnosticResult diagnosticResult = currentPackage.runCodeGenAndModifyPlugins();
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 0);
     }
 }

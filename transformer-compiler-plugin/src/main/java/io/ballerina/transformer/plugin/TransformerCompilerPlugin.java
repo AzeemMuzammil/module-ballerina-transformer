@@ -26,10 +26,8 @@ import io.ballerina.projects.plugins.CompilerPluginContext;
  *
  */
 public class TransformerCompilerPlugin extends CompilerPlugin {
-
     @Override
     public void init(CompilerPluginContext compilerPluginContext) {
-//        compilerPluginContext.addCodeAnalyzer(new TransformerCodeAnalyzer());
-        compilerPluginContext.addCodeGenerator(new TransformerCodeGenerator());
+        compilerPluginContext.addCodeGenerator(new TransformerCodeAnalyzerGenerator());
     }
 }
