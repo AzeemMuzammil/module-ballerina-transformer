@@ -33,19 +33,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public class TransformerCodeAnalyzerGenerator extends CodeGenerator {
-
-    static final AtomicInteger VISITED_DEFAULT_MODULE_PARTS = new AtomicInteger(0);
-    static final AtomicBoolean FOUND_EXPR_BODIED_FUNC = new AtomicBoolean(false);
-    static final List<String> TRANSFORMER_FUNC_NAMES = Collections.synchronizedList(new ArrayList<>());
+    private final AtomicInteger visitedDefaultModulePart = new AtomicInteger(0);
+    private final AtomicBoolean foundTransformerFunc = new AtomicBoolean(false);
+    private final List<String> transformerFuncNames = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public void init(CodeGeneratorContext codeGeneratorContext) {
-        codeGeneratorContext.addSyntaxNodeAnalysisTask(new TransformerCodeValidator(), List.of(
-                SyntaxKind.CLASS_DEFINITION,
-                SyntaxKind.FUNCTION_DEFINITION,
-                SyntaxKind.LISTENER_DECLARATION,
-                SyntaxKind.MODULE_PART,
-                SyntaxKind.SERVICE_DECLARATION));
-        codeGeneratorContext.addSourceGeneratorTask(new TransformerServiceGenerator());
+        codeGeneratorContext.addSyntaxNodeAnalysisTask(
+                new TransformerCodeValidator(visitedDefaultModulePart, foundTransformerFunc, transformerFuncNames),
+                List.of(SyntaxKind.MODULE_PART));
+        codeGeneratorContext.addSourceGeneratorTask(new TransformerServiceGenerator(transformerFuncNames));
     }
 }

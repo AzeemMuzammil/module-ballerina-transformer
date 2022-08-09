@@ -62,23 +62,19 @@ public class CompilerPluginTests {
     @Test
     public void testForAnnotatedFunctions() {
         Package currentPackage = loadPackage("sample_package_0");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 5);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
-        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_104);
-        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_101);
-        assertError(diagnosticResult, 4, DiagnosticMessage.ERROR_106);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_102);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_101);
+        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_106);
+        assertError(diagnosticResult, 4, DiagnosticMessage.ERROR_105);
     }
 
     @Test
     public void testForNoPublicIsolatedExpressionBodyFunc() {
         Package currentPackage = loadPackage("sample_package_1");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 1);
@@ -88,66 +84,56 @@ public class CompilerPluginTests {
     @Test
     public void testForMainEntryPoint() {
         Package currentPackage = loadPackage("sample_package_2");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 3);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_100);
-        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_101);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_100);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_101);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_105);
     }
 
     @Test
     public void testForClasses() {
         Package currentPackage = loadPackage("sample_package_3");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 2);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_103);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_103);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_105);
     }
 
     @Test
     public void testForServices() {
         Package currentPackage = loadPackage("sample_package_4");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 2);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_105);
     }
 
     @Test
     public void testForListeners() {
         Package currentPackage = loadPackage("sample_package_5");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 4);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
-        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_104);
-        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_103);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_102);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_103);
+        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_105);
     }
 
     @Test
     public void testForPublicFunctions() {
         Package currentPackage = loadPackage("sample_package_6");
-//        PackageCompilation compilation = currentPackage.getCompilation();
-//        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 4);
-        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_105);
-        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_102);
-        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_104);
-        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_101);
+        assertError(diagnosticResult, 0, DiagnosticMessage.ERROR_102);
+        assertError(diagnosticResult, 1, DiagnosticMessage.ERROR_104);
+        assertError(diagnosticResult, 2, DiagnosticMessage.ERROR_101);
+        assertError(diagnosticResult, 3, DiagnosticMessage.ERROR_105);
     }
 
     @Test

@@ -23,11 +23,18 @@ import io.ballerina.projects.plugins.SourceGeneratorContext;
 import io.ballerina.tools.text.TextDocument;
 import io.ballerina.tools.text.TextDocuments;
 
+import java.util.List;
+
 /**
  * Transformer module Service Generator.
  *
  */
 public class TransformerServiceGenerator implements GeneratorTask<SourceGeneratorContext> {
+    private final List<String> transformerFuncNames;
+
+    TransformerServiceGenerator(List<String> transformerFuncNames) {
+        this.transformerFuncNames = transformerFuncNames;
+    }
 
     @Override
     public void generate(SourceGeneratorContext sourceGeneratorContext) {
@@ -35,9 +42,10 @@ public class TransformerServiceGenerator implements GeneratorTask<SourceGenerato
         StringBuilder balServiceCode = new StringBuilder("import ballerina/http;\n" +
                 "\n" +
                 "# A service representing a network-accessible API\n" +
-                "# bound to port `9090`.\n" +
-                "service / on new http:Listener(9090) {\n");
-        for (String transformerFuncName : TransformerCodeAnalyzerGenerator.TRANSFORMER_FUNC_NAMES) {
+                "# bound to default port `8080`.\n\n" +
+                "configurable int port = 8080;\n\n" +
+                "service / on new http:Listener(port) {\n");
+        for (String transformerFuncName : transformerFuncNames) {
             String service = String.format(
                     "    resource function post %s(@http:Payload json payload) returns json|error {\n" +
                             "        return %s(check payload.cloneWithType()).toJson();\n" +
