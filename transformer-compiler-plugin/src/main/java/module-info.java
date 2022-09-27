@@ -20,4 +20,5 @@ module io.ballerina.transformer.plugin {
     requires io.ballerina.lang;
     requires io.ballerina.parser;
     requires io.ballerina.tools.api;
+    requires io.ballerina.formatter.core;
 }

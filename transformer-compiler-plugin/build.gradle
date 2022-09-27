@@ -30,6 +30,7 @@ dependencies {
     implementation group: 'org.ballerinalang', name: 'ballerina-lang', version: "${ballerinaLangVersion}"
     implementation group: 'org.ballerinalang', name: 'ballerina-tools-api', version: "${ballerinaLangVersion}"
     implementation group: 'org.ballerinalang', name: 'ballerina-parser', version: "${ballerinaLangVersion}"
+    implementation group: 'org.ballerinalang', name: 'formatter-core', version: "${ballerinaLangVersion}"
 }
 
 def excludePattern = '**/module-info.java'
@@ -54,7 +55,7 @@ spotbugsMain {
         text.enabled = true
     }
     def excludeFile = file("${rootDir}/spotbugs-exclude.xml")
-    if(excludeFile.exists()) {
+    if (excludeFile.exists()) {
         excludeFilter = excludeFile
     }
 }

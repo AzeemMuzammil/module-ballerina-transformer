@@ -142,6 +142,11 @@ public class CompilerPluginTests {
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        codeGenResult.updatedPackage().orElse(null).modules().forEach(module -> {
+            module.documentIds().forEach(docId -> {
+                System.out.println(module.document(docId).textDocument().toString());
+            });
+        });
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 0);
     }

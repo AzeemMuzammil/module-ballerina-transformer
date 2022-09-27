@@ -18,6 +18,7 @@
 
 package io.ballerina.transformer.plugin;
 
+import io.ballerina.compiler.syntax.tree.FunctionDefinitionNode;
 import io.ballerina.compiler.syntax.tree.SyntaxKind;
 import io.ballerina.projects.plugins.CodeGenerator;
 import io.ballerina.projects.plugins.CodeGeneratorContext;
@@ -35,13 +36,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TransformerCodeAnalyzerGenerator extends CodeGenerator {
     private final AtomicInteger visitedDefaultModulePart = new AtomicInteger(0);
     private final AtomicBoolean foundTransformerFunc = new AtomicBoolean(false);
-    private final List<String> transformerFuncNames = Collections.synchronizedList(new ArrayList<>());
+    private final List<FunctionDefinitionNode> transformerFunctions = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public void init(CodeGeneratorContext codeGeneratorContext) {
         codeGeneratorContext.addSyntaxNodeAnalysisTask(
-                new TransformerCodeValidator(visitedDefaultModulePart, foundTransformerFunc, transformerFuncNames),
+                new TransformerCodeValidator(visitedDefaultModulePart, foundTransformerFunc, transformerFunctions),
                 List.of(SyntaxKind.MODULE_PART));
-        codeGeneratorContext.addSourceGeneratorTask(new TransformerServiceGenerator(transformerFuncNames));
+        codeGeneratorContext.addSourceGeneratorTask(new TransformerServiceGenerator(transformerFunctions));
     }
 }

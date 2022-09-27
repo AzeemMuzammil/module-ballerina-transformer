@@ -18,9 +18,16 @@
 
 package io.ballerina.transformer.plugin;
 
+import io.ballerina.compiler.syntax.tree.ArrayTypeDescriptorNode;
+import io.ballerina.compiler.syntax.tree.DefaultableParameterNode;
 import io.ballerina.compiler.syntax.tree.FunctionDefinitionNode;
+import io.ballerina.compiler.syntax.tree.MapTypeDescriptorNode;
 import io.ballerina.compiler.syntax.tree.ModulePartNode;
+import io.ballerina.compiler.syntax.tree.RequiredParameterNode;
+import io.ballerina.compiler.syntax.tree.RestParameterNode;
 import io.ballerina.compiler.syntax.tree.SyntaxKind;
+import io.ballerina.compiler.syntax.tree.TableTypeDescriptorNode;
+import io.ballerina.compiler.syntax.tree.TypeParameterNode;
 import io.ballerina.projects.DocumentId;
 import io.ballerina.projects.Module;
 import io.ballerina.projects.ModuleId;
@@ -43,13 +50,24 @@ public class TransformerCodeValidator implements AnalysisTask<SyntaxNodeAnalysis
 
     private final AtomicInteger visitedDefaultModulePart;
     private final AtomicBoolean foundTransformerFunc;
-    private final List<String> transformerFuncNames;
+    private final List<FunctionDefinitionNode> transformerFunctions;
+
+    private final List<SyntaxKind> httpSupportedTypes = List.of(
+            SyntaxKind.BOOLEAN_TYPE_DESC,
+            SyntaxKind.INT_TYPE_DESC,
+            SyntaxKind.FLOAT_TYPE_DESC,
+            SyntaxKind.DECIMAL_TYPE_DESC,
+            SyntaxKind.BYTE_TYPE_DESC,
+            SyntaxKind.STRING_TYPE_DESC,
+            SyntaxKind.JSON_TYPE_DESC,
+            SyntaxKind.MAP_TYPE_DESC,
+            SyntaxKind.RECORD_TYPE_DESC);
 
     TransformerCodeValidator(AtomicInteger visitedDefaultModulePart, AtomicBoolean foundTransformerFunc,
-                             List<String> transformerFuncNames) {
+                             List<FunctionDefinitionNode> transformerFunctions) {
         this.visitedDefaultModulePart = visitedDefaultModulePart;
         this.foundTransformerFunc = foundTransformerFunc;
-        this.transformerFuncNames = transformerFuncNames;
+        this.transformerFunctions = transformerFunctions;
     }
 
     @Override
@@ -87,9 +105,9 @@ public class TransformerCodeValidator implements AnalysisTask<SyntaxNodeAnalysis
                         }
                     });
                     if (isDefaultModule(syntaxNodeAnalysisContext.currentPackage().modules(), moduleId)) {
-                        if (isTransformerFunc(functionDefNode)) {
+                        if (isTransformerFunc(functionDefNode) && isServiceGenerableFunc(functionDefNode)) {
                             foundTransformerFunc.set(true);
-                            transformerFuncNames.add(functionDefNode.functionName().text());
+                            transformerFunctions.add(functionDefNode);
                         }
                     }
                     break;
@@ -142,5 +160,85 @@ public class TransformerCodeValidator implements AnalysisTask<SyntaxNodeAnalysis
                 && funcDefNode.qualifierList().stream().anyMatch(qualifier ->
                 qualifier.kind() == SyntaxKind.PUBLIC_KEYWORD)
                 && funcDefNode.functionBody().kind() == SyntaxKind.EXPRESSION_FUNCTION_BODY;
+    }
+
+    private boolean isServiceGenerableFunc(FunctionDefinitionNode funcDefNode) {
+        AtomicBoolean isSupportedType = new AtomicBoolean(false);
+        funcDefNode.functionSignature().parameters().forEach(param -> {
+            if (param.kind().equals(SyntaxKind.REQUIRED_PARAM)) {
+                RequiredParameterNode requiredParamNode = (RequiredParameterNode) param;
+                if (requiredParamNode.typeName().kind().equals(SyntaxKind.ARRAY_TYPE_DESC)) {
+                    if (httpSupportedTypes.contains(((ArrayTypeDescriptorNode) requiredParamNode.typeName())
+                            .memberTypeDesc().kind())) {
+                        isSupportedType.set(true);
+                    }
+                } else if (requiredParamNode.typeName().kind().equals(SyntaxKind.MAP_TYPE_DESC)) {
+                    if (httpSupportedTypes.contains(((MapTypeDescriptorNode) requiredParamNode.typeName())
+                            .mapTypeParamsNode().typeNode().kind())) {
+                        isSupportedType.set(true);
+                    }
+                } else if (requiredParamNode.typeName().kind().equals(SyntaxKind.TABLE_TYPE_DESC)) {
+                    if (((TypeParameterNode) ((TableTypeDescriptorNode) requiredParamNode.typeName())
+                            .rowTypeParameterNode()).typeNode().kind().equals(SyntaxKind.MAP_TYPE_DESC)) {
+                        if (httpSupportedTypes.contains(((MapTypeDescriptorNode) ((TypeParameterNode)
+                                ((TableTypeDescriptorNode) requiredParamNode.typeName()).rowTypeParameterNode())
+                                .typeNode()).mapTypeParamsNode().typeNode().kind())) {
+                            isSupportedType.set(true);
+                        }
+                    }
+                } else if (httpSupportedTypes.contains(requiredParamNode.typeName().kind())) {
+                    isSupportedType.set(true);
+                }
+            } else if (param.kind().equals(SyntaxKind.DEFAULTABLE_PARAM)) {
+                DefaultableParameterNode defaultableParamNode = (DefaultableParameterNode) param;
+                if (defaultableParamNode.typeName().kind().equals(SyntaxKind.ARRAY_TYPE_DESC)) {
+                    if (httpSupportedTypes.contains(((ArrayTypeDescriptorNode) defaultableParamNode.typeName())
+                            .memberTypeDesc().kind())) {
+                        isSupportedType.set(true);
+                    }
+                } else if (defaultableParamNode.typeName().kind().equals(SyntaxKind.MAP_TYPE_DESC)) {
+                    if (httpSupportedTypes.contains(((MapTypeDescriptorNode) defaultableParamNode.typeName())
+                            .mapTypeParamsNode().typeNode().kind())) {
+                        isSupportedType.set(true);
+                    }
+                } else if (defaultableParamNode.typeName().kind().equals(SyntaxKind.TABLE_TYPE_DESC)) {
+                    if (((TypeParameterNode) ((TableTypeDescriptorNode) defaultableParamNode.typeName())
+                            .rowTypeParameterNode()).typeNode().kind().equals(SyntaxKind.MAP_TYPE_DESC)) {
+                        if (httpSupportedTypes.contains(((MapTypeDescriptorNode) ((TypeParameterNode)
+                                ((TableTypeDescriptorNode) defaultableParamNode.typeName()).rowTypeParameterNode())
+                                .typeNode()).mapTypeParamsNode().typeNode().kind())) {
+                            isSupportedType.set(true);
+                        }
+                    }
+                } else if (httpSupportedTypes.contains(defaultableParamNode.typeName().kind())) {
+                    isSupportedType.set(true);
+                }
+            } else if (param.kind().equals(SyntaxKind.REST_PARAM)) {
+                RestParameterNode restParamNode = (RestParameterNode) param;
+                if (restParamNode.typeName().kind().equals(SyntaxKind.ARRAY_TYPE_DESC)) {
+                    if (httpSupportedTypes.contains(((ArrayTypeDescriptorNode) restParamNode.typeName())
+                            .memberTypeDesc().kind())) {
+                        isSupportedType.set(true);
+                    }
+                } else if (restParamNode.typeName().kind().equals(SyntaxKind.MAP_TYPE_DESC)) {
+                    if (httpSupportedTypes.contains(((MapTypeDescriptorNode) restParamNode.typeName())
+                            .mapTypeParamsNode().typeNode().kind())) {
+                        isSupportedType.set(true);
+                    }
+                } else if (restParamNode.typeName().kind().equals(SyntaxKind.TABLE_TYPE_DESC)) {
+                    if (((TypeParameterNode) ((TableTypeDescriptorNode) restParamNode.typeName())
+                            .rowTypeParameterNode()).typeNode().kind().equals(SyntaxKind.MAP_TYPE_DESC)) {
+                        if (httpSupportedTypes.contains(((MapTypeDescriptorNode) ((TypeParameterNode)
+                                ((TableTypeDescriptorNode) restParamNode.typeName()).rowTypeParameterNode())
+                                .typeNode()).mapTypeParamsNode().typeNode().kind())) {
+                            isSupportedType.set(true);
+                        }
+                    }
+                } else if (httpSupportedTypes.contains(restParamNode.typeName().kind())) {
+                    isSupportedType.set(true);
+                }
+            }
+        });
+        return isSupportedType.get();
     }
 }
