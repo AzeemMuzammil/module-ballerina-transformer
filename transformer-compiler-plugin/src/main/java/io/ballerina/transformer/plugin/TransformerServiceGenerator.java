@@ -84,6 +84,11 @@ import java.util.List;
 public class TransformerServiceGenerator implements GeneratorTask<SourceGeneratorContext> {
 
     private static final String PAYLOAD_KEYWORD = "Payload";
+    private static final String PAYLOAD_TOKEN = "payload";
+    private static final String HTTP_KEYWORD = "http";
+    private static final String LISTENER_KEYWORD = "Listener";
+    private static final String PORT_KEYWORD = "port";
+    private static final String POST_KEYWORD = "post";
     private final List<FunctionDefinitionNode> transformerFunctions;
 
     TransformerServiceGenerator(List<FunctionDefinitionNode> transformerFunctions) {
@@ -93,70 +98,63 @@ public class TransformerServiceGenerator implements GeneratorTask<SourceGenerato
     @Override
     public void generate(SourceGeneratorContext sourceGeneratorContext) {
         // TODO: Change the Listener Port to be configurable in Ballerina.toml
-//        StringBuilder balServiceCode = new StringBuilder("import ballerina/http;\n" +
-//                "\n" +
-//                "# A service representing a network-accessible API\n" +
-//                "# bound to default port `8080`.\n\n" +
-//                "configurable int port = 8080;\n\n" +
-//                "service / on new http:Listener(port) {\n");
-//        for (String transformerFuncName : transformerFuncNames) {
-//            String service = String.format(
-//                    "    resource function post %s(@http:Payload json payload) returns json|error {\n" +
-//                            "        return %s(check payload.cloneWithType()).toJson();\n" +
-//                            "    }\n\n", transformerFuncName, transformerFuncName);
-//            balServiceCode.append(service);
-//        }
-//        balServiceCode.append("}\n");
-
-        String test = generateCode(transformerFunctions);
-
-//        TextDocument textDocument = TextDocuments.from(balServiceCode.toString());
-        TextDocument textDocument = TextDocuments.from(test);
+        String balServiceCode = generateCode(transformerFunctions);
+        TextDocument textDocument = TextDocuments.from(balServiceCode);
         sourceGeneratorContext.addSourceFile(textDocument, "service");
     }
 
+    /**
+     * This method returns generated code for the given transformer functions.
+     *
+     * @return {@link String} Generated code for the given transformer functions
+     */
     private String generateCode(List<FunctionDefinitionNode> transformerFunctions) {
         try {
             Token importKeyword = AbstractNodeFactory.createToken(SyntaxKind.IMPORT_KEYWORD);
             Token orgNameToken = AbstractNodeFactory.createIdentifierToken("ballerina");
             Token slashToken = AbstractNodeFactory.createToken(SyntaxKind.SLASH_TOKEN);
             ImportOrgNameNode orgNameNode = NodeFactory.createImportOrgNameNode(orgNameToken, slashToken);
-            IdentifierToken http = AbstractNodeFactory.createIdentifierToken("http");
-            SeparatedNodeList<IdentifierToken> moduleName = AbstractNodeFactory.createSeparatedNodeList(List.of(http));
-            //        moduleName.add(http);
+            IdentifierToken httpKeyword = AbstractNodeFactory.createIdentifierToken(HTTP_KEYWORD);
+            SeparatedNodeList<IdentifierToken> moduleName =
+                    AbstractNodeFactory.createSeparatedNodeList(List.of(httpKeyword));
             Token semicolonToken = AbstractNodeFactory.createToken(SyntaxKind.SEMICOLON_TOKEN);
             ImportDeclarationNode httpImport =
                     NodeFactory.createImportDeclarationNode(importKeyword, orgNameNode, moduleName, null,
                             semicolonToken);
             NodeList<ImportDeclarationNode> imports = AbstractNodeFactory.createNodeList(List.of(httpImport));
-            //        imports.add(httpImport);
             List<TypeDefinitionNode> typeDefNodes = new ArrayList<>();
             transformerFunctions.forEach(transformerFunc -> {
                 if (transformerFunc.functionSignature().parameters().size() > 0) {
                     typeDefNodes.add(generatePayloadRecord(transformerFunc));
                 }
             });
-            List<ModuleMemberDeclarationNode> moduleMems = new ArrayList<>();
-            moduleMems.add(generateConfigurable());
-            moduleMems.add(generateService(transformerFunctions));
-            moduleMems.addAll(typeDefNodes);
-            NodeList<ModuleMemberDeclarationNode> moduleMembers = AbstractNodeFactory.createNodeList(moduleMems);
+            List<ModuleMemberDeclarationNode> moduleMembers = new ArrayList<>();
+            moduleMembers.add(generateConfigurable());
+            moduleMembers.add(generateService(transformerFunctions));
+            moduleMembers.addAll(typeDefNodes);
+            NodeList<ModuleMemberDeclarationNode> moduleMemberNodes = AbstractNodeFactory.createNodeList(moduleMembers);
             Token eofToken = AbstractNodeFactory.createIdentifierToken("");
-            ModulePartNode modulePartNode = NodeFactory.createModulePartNode(imports, moduleMembers, eofToken);
+            ModulePartNode modulePartNode = NodeFactory.createModulePartNode(imports, moduleMemberNodes, eofToken);
             return Formatter.format(modulePartNode.syntaxTree()).toSourceCode();
         } catch (FormatterException e) {
             return null;
         }
     }
 
+    /**
+     * This method returns ModuleVariableDeclarationNode which defines the configurable port number.
+     *
+     * @return {@link ModuleVariableDeclarationNode}
+     * Generated ModuleVariableDeclarationNode for configuring port number
+     */
     private ModuleVariableDeclarationNode generateConfigurable() {
         Token configToken = NodeFactory.createToken(SyntaxKind.CONFIGURABLE_KEYWORD);
-        List<Token> qualifs = new ArrayList<>();
-        qualifs.add(configToken);
+        List<Token> qualifiers = new ArrayList<>();
+        qualifiers.add(configToken);
 
-        NodeList<Token> qualifiers = AbstractNodeFactory.createNodeList(qualifs);
+        NodeList<Token> qualifierNodes = AbstractNodeFactory.createNodeList(qualifiers);
         Token typeName = AbstractNodeFactory.createToken(SyntaxKind.INT_KEYWORD);
-        IdentifierToken fieldName = AbstractNodeFactory.createIdentifierToken("port");
+        IdentifierToken fieldName = AbstractNodeFactory.createIdentifierToken(PORT_KEYWORD);
         SimpleNameReferenceNode variableName = NodeFactory.createSimpleNameReferenceNode(fieldName);
         TypeDescriptorNode typeDescNode = NodeFactory.createBuiltinSimpleNameReferenceNode(typeName.kind(), typeName);
         BindingPatternNode bindingPatternNode = NodeFactory.createFieldBindingPatternVarnameNode(variableName);
@@ -169,77 +167,80 @@ public class TransformerServiceGenerator implements GeneratorTask<SourceGenerato
                         minList, minList);
         BasicLiteralNode basicLiteralNode = NodeFactory.createBasicLiteralNode(SyntaxKind.NUMERIC_LITERAL, valToken);
         Token semicolonToken = AbstractNodeFactory.createToken(SyntaxKind.SEMICOLON_TOKEN);
-        return NodeFactory.createModuleVariableDeclarationNode(null, null, qualifiers,
+        return NodeFactory.createModuleVariableDeclarationNode(null, null, qualifierNodes,
                 typedBindingPatternNode, equalsToken, basicLiteralNode, semicolonToken);
     }
 
+    /**
+     * This method returns ServiceDeclarationNode for the transformer function nodes.
+     *
+     * @param transformerFunctions List of transformer functions for which resource functions to be generated
+     * @return {@link ServiceDeclarationNode} Generated ServiceDeclarationNode
+     */
     private ServiceDeclarationNode generateService(List<FunctionDefinitionNode> transformerFunctions) {
-        NodeList<Token> qualifiers = AbstractNodeFactory.createEmptyNodeList();
+        NodeList<Token> qualifierNodes = AbstractNodeFactory.createEmptyNodeList();
         Token serviceKeyword = AbstractNodeFactory.createToken(SyntaxKind.SERVICE_KEYWORD);
 
         Token resourcePath = NodeFactory.createToken(SyntaxKind.SLASH_TOKEN);
-        List<Token> resourcePaths = new ArrayList<>();
-        resourcePaths.add(resourcePath);
+        NodeList<Node> absoluteResourcePathNodes = AbstractNodeFactory.createNodeList(resourcePath);
 
-        NodeList<Node> absoluteResourcePath = AbstractNodeFactory.createNodeList(resourcePath);
         Token onKeyword = AbstractNodeFactory.createToken(SyntaxKind.ON_KEYWORD);
-
         Token newKeyword = AbstractNodeFactory.createToken(SyntaxKind.NEW_KEYWORD);
 
-        IdentifierToken modulePrefix = AbstractNodeFactory.createIdentifierToken("http");
+        IdentifierToken modulePrefix = AbstractNodeFactory.createIdentifierToken(HTTP_KEYWORD);
         Token colonToken = AbstractNodeFactory.createToken(SyntaxKind.COLON_TOKEN);
-        IdentifierToken identifier = AbstractNodeFactory.createIdentifierToken("Listener");
-        TypeDescriptorNode typeDescNode =
-                NodeFactory.createQualifiedNameReferenceNode(modulePrefix, colonToken, identifier);
+        IdentifierToken listenerIdentifier = AbstractNodeFactory.createIdentifierToken(LISTENER_KEYWORD);
+        TypeDescriptorNode httpListenerTypeDescNode =
+                NodeFactory.createQualifiedNameReferenceNode(modulePrefix, colonToken, listenerIdentifier);
 
         Token opParenToken = AbstractNodeFactory.createToken(SyntaxKind.OPEN_PAREN_TOKEN);
-        Token nameToken = AbstractNodeFactory.createIdentifierToken("port");
-        SimpleNameReferenceNode expression = NodeFactory.createSimpleNameReferenceNode(nameToken);
-        PositionalArgumentNode positionalArgumentNode = NodeFactory.createPositionalArgumentNode(expression);
-        SeparatedNodeList<FunctionArgumentNode> arguments =
-                AbstractNodeFactory.createSeparatedNodeList(positionalArgumentNode);
+        Token positionalArgNameToken = AbstractNodeFactory.createIdentifierToken(PORT_KEYWORD);
+        SimpleNameReferenceNode positionalArgExprNode =
+                NodeFactory.createSimpleNameReferenceNode(positionalArgNameToken);
+        PositionalArgumentNode newHTTPListenerExprArgNode =
+                NodeFactory.createPositionalArgumentNode(positionalArgExprNode);
+        SeparatedNodeList<FunctionArgumentNode> newHTTPListenerExprArgNodes =
+                AbstractNodeFactory.createSeparatedNodeList(newHTTPListenerExprArgNode);
         Token clParenToken = AbstractNodeFactory.createToken(SyntaxKind.CLOSE_PAREN_TOKEN);
-        ParenthesizedArgList parenArgList =
-                NodeFactory.createParenthesizedArgList(opParenToken, arguments, clParenToken);
-        ExplicitNewExpressionNode listenerNode =
-                NodeFactory.createExplicitNewExpressionNode(newKeyword, typeDescNode, parenArgList);
-        SeparatedNodeList<ExpressionNode> expressions = AbstractNodeFactory.createSeparatedNodeList(listenerNode);
+        ParenthesizedArgList newHTTPListenerExprArgs =
+                NodeFactory.createParenthesizedArgList(opParenToken, newHTTPListenerExprArgNodes, clParenToken);
+        ExplicitNewExpressionNode newHTTPListenerExprNode =
+                NodeFactory.createExplicitNewExpressionNode(newKeyword, httpListenerTypeDescNode, newHTTPListenerExprArgs);
+        SeparatedNodeList<ExpressionNode> expressionNodes =
+                AbstractNodeFactory.createSeparatedNodeList(newHTTPListenerExprNode);
 
         Token opBraceToken = AbstractNodeFactory.createToken(SyntaxKind.OPEN_BRACE_TOKEN);
         Token clBraceToken = AbstractNodeFactory.createToken(SyntaxKind.CLOSE_BRACE_TOKEN);
         List<Node> funcMembers = new ArrayList<>();
         for (FunctionDefinitionNode transformerFuncNode : transformerFunctions) {
-            List<Token> qualiferTokens = new ArrayList<>();
-            Token resourceToken = AbstractNodeFactory.createToken(SyntaxKind.RESOURCE_KEYWORD);
-            qualiferTokens.add(resourceToken);
-            NodeList<Token> funcQualifiers = AbstractNodeFactory.createNodeList(qualiferTokens);
+            List<Token> functionQualifiers = new ArrayList<>();
+            Token resourceKeyword = AbstractNodeFactory.createToken(SyntaxKind.RESOURCE_KEYWORD);
+            functionQualifiers.add(resourceKeyword);
+            NodeList<Token> functionQualifierNodes = AbstractNodeFactory.createNodeList(functionQualifiers);
             Token functionKeyword = AbstractNodeFactory.createToken(SyntaxKind.FUNCTION_KEYWORD);
-            List<Node> relativeRsrcPaths = new ArrayList<>();
-            IdentifierToken funcName = AbstractNodeFactory.createIdentifierToken("post");
-            IdentifierToken repativeRsrcPath =
+            IdentifierToken functionName = AbstractNodeFactory.createIdentifierToken(POST_KEYWORD);
+            List<Node> relativeResourcePaths = new ArrayList<>();
+            IdentifierToken relativeResourcePathToken =
                     AbstractNodeFactory.createIdentifierToken(transformerFuncNode.functionName().text());
-            relativeRsrcPaths.add(repativeRsrcPath);
-            NodeList<Node> realteiveResourcePath = AbstractNodeFactory.createNodeList(relativeRsrcPaths);
+            relativeResourcePaths.add(relativeResourcePathToken);
+            NodeList<Node> relativeResourcePathNodes = AbstractNodeFactory.createNodeList(relativeResourcePaths);
 
             Token atToken = AbstractNodeFactory.createToken(SyntaxKind.AT_TOKEN);
-            IdentifierToken identifierAnnot = AbstractNodeFactory.createIdentifierToken("Payload");
-            QualifiedNameReferenceNode annotReferenceNode =
-                    NodeFactory.createQualifiedNameReferenceNode(modulePrefix, colonToken, identifierAnnot);
-            AnnotationNode annotNode = NodeFactory.createAnnotationNode(atToken, annotReferenceNode, null);
-            NodeList<AnnotationNode> annotationNodes = AbstractNodeFactory.createNodeList(annotNode);
+            IdentifierToken annotationToken = AbstractNodeFactory.createIdentifierToken(PAYLOAD_KEYWORD);
+            QualifiedNameReferenceNode annotationReferenceNode =
+                    NodeFactory.createQualifiedNameReferenceNode(modulePrefix, colonToken, annotationToken);
+            AnnotationNode annotationNode = NodeFactory.createAnnotationNode(atToken, annotationReferenceNode, null);
+            NodeList<AnnotationNode> annotationNodes = AbstractNodeFactory.createNodeList(annotationNode);
 
             SeparatedNodeList<ParameterNode> parameterNodes = AbstractNodeFactory.createSeparatedNodeList();
             if (transformerFuncNode.functionSignature().parameters().size() > 0) {
-//                Token typeName = AbstractNodeFactory
-//                        .createToken(((BuiltinSimpleNameReferenceNode) ((RequiredParameterNode) transformerFuncNode
-//                                .functionSignature().parameters().get(0)).typeName()).name().kind());
                 IdentifierToken typeName = AbstractNodeFactory
-                        .createIdentifierToken(transformerFuncNode.functionName().text() + "Payload");
+                        .createIdentifierToken(transformerFuncNode.functionName().text() + PAYLOAD_KEYWORD);
                 SimpleNameReferenceNode typeNameNode = NodeFactory.createSimpleNameReferenceNode(typeName);
-                IdentifierToken paramName = AbstractNodeFactory.createIdentifierToken("payload");
-                RequiredParameterNode reqParamNode =
+                IdentifierToken paramName = AbstractNodeFactory.createIdentifierToken(PAYLOAD_TOKEN);
+                RequiredParameterNode requiredParamNode =
                         NodeFactory.createRequiredParameterNode(annotationNodes, typeNameNode, paramName);
-                parameterNodes = AbstractNodeFactory.createSeparatedNodeList(reqParamNode);
+                parameterNodes = AbstractNodeFactory.createSeparatedNodeList(requiredParamNode);
             }
 
             Token returnsKeyword = AbstractNodeFactory.createToken(SyntaxKind.RETURNS_KEYWORD);
@@ -356,17 +357,23 @@ public class TransformerServiceGenerator implements GeneratorTask<SourceGenerato
             FunctionBodyNode funcBodyNode = NodeFactory.createFunctionBodyBlockNode(opBraceToken, null,
                     statements, clBraceToken);
             FunctionDefinitionNode funcDefNode =
-                    NodeFactory.createFunctionDefinitionNode(null, null, funcQualifiers, functionKeyword,
-                            funcName, realteiveResourcePath, funcSignatureNode, funcBodyNode);
+                    NodeFactory.createFunctionDefinitionNode(null, null, functionQualifierNodes, functionKeyword,
+                            functionName, relativeResourcePathNodes, funcSignatureNode, funcBodyNode);
             funcMembers.add(funcDefNode);
         }
         NodeList<Node> members = AbstractNodeFactory.createNodeList(funcMembers);
 
-        return NodeFactory.createServiceDeclarationNode(null, qualifiers, serviceKeyword,
-                null, absoluteResourcePath, onKeyword, expressions, opBraceToken, members,
+        return NodeFactory.createServiceDeclarationNode(null, qualifierNodes, serviceKeyword,
+                null, absoluteResourcePathNodes, onKeyword, expressionNodes, opBraceToken, members,
                 clBraceToken);
     }
 
+    /**
+     * This method returns Payload Record node for the given function definition node.
+     *
+     * @param funcDefNode Function definition node for which the Record to be generated
+     * @return {@link TypeDefinitionNode} Generated Payload Record TypeDefinitionNode
+     */
     private TypeDefinitionNode generatePayloadRecord(FunctionDefinitionNode funcDefNode) {
         Token recordKeyWord = AbstractNodeFactory.createToken(SyntaxKind.RECORD_KEYWORD);
         Token bodyStartDelimiter = AbstractNodeFactory.createToken(SyntaxKind.OPEN_BRACE_TOKEN);
