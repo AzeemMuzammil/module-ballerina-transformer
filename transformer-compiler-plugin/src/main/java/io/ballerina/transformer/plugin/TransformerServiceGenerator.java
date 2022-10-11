@@ -204,8 +204,8 @@ public class TransformerServiceGenerator implements GeneratorTask<SourceGenerato
         Token clParenToken = AbstractNodeFactory.createToken(SyntaxKind.CLOSE_PAREN_TOKEN);
         ParenthesizedArgList newHTTPListenerExprArgs =
                 NodeFactory.createParenthesizedArgList(opParenToken, newHTTPListenerExprArgNodes, clParenToken);
-        ExplicitNewExpressionNode newHTTPListenerExprNode =
-                NodeFactory.createExplicitNewExpressionNode(newKeyword, httpListenerTypeDescNode, newHTTPListenerExprArgs);
+        ExplicitNewExpressionNode newHTTPListenerExprNode = NodeFactory
+                .createExplicitNewExpressionNode(newKeyword, httpListenerTypeDescNode, newHTTPListenerExprArgs);
         SeparatedNodeList<ExpressionNode> expressionNodes =
                 AbstractNodeFactory.createSeparatedNodeList(newHTTPListenerExprNode);
 

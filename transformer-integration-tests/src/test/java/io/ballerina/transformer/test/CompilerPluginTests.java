@@ -139,14 +139,22 @@ public class CompilerPluginTests {
     @Test
     public void testForValidPackage() {
         Package currentPackage = loadPackage("sample_package_7");
+        CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
+        DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
+        Assert.assertEquals(diagnosticResult.errorCount(), 0);
+    }
+
+    @Test
+    public void testForValidPackageWithFailingCodeGeneration() {
+        Package currentPackage = loadPackage("sample_package_8");
 //        PackageCompilation compilation = currentPackage.getCompilation();
 //        DiagnosticResult diagnosticResult = compilation.diagnosticResult();
         CodeGeneratorResult codeGenResult = currentPackage.runCodeGeneratorPlugins();
-        codeGenResult.updatedPackage().orElse(null).modules().forEach(module -> {
-            module.documentIds().forEach(docId -> {
-                System.out.println(module.document(docId).textDocument().toString());
-            });
-        });
+//        codeGenResult.updatedPackage().orElse(null).modules().forEach(module -> {
+//            module.documentIds().forEach(docId -> {
+//                Systems.out.println(module.document(docId).textDocument().toString());
+//            });
+//        });
         DiagnosticResult diagnosticResult = codeGenResult.reportedDiagnostics();
         Assert.assertEquals(diagnosticResult.errorCount(), 0);
     }
